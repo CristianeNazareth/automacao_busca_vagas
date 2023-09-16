@@ -1,0 +1,38 @@
+Criação do ambiente virtual
+Primeiramente é recomendado criar um ambiente virtual. Nos comandos abaixo, executados em Linux, primeiramente instalamos o virtualenv, em seguida, verificamos a versão do Python, apenas para verificar se está tudo certo com o Python, depois iniciamos um ambiente virtual chamado “nomedoambientevirtual” e, após isso, ativamos ele. Por fim, listamos as dependências. Esses comandos podem ser vistos abaixo:
+
+- pip install virtualenv --use
+- python3 --version # dependendo do seu sistema o comando pode ser python --version
+- virtualenv nomedoambientevirtual --python=versaopython
+- source nomedoambientevirtual
+- pip freeze
+- deactivate # esse comando sai do ambiente, use apenas quando terminar o trabalho
+
+Caso não tenha pip instalado na máquina, siga o seguinte tutorial https://www.dataquest.io/blog/install-pip-windows/.
+
+Não gerei o arquivo requeriments (comando pip freeze > requirements.txt), pois o processo do estágio pediu para deixar tudo escrito em um arquivo de texto.
+
+Instalação de dependências
+Para o código funcionar, precisamos instalar alguns pacotes do python. Os pacotes são:
+selenium e o driver do chrome, no linux podemos apenas instalar o pacote do drive via pip, mas no windows é necessário baixar o arquivo.
+Assim, instale o pacote selenium com o comando abaixo:
+- pip install selenium
+Então precisaremos de um driver para integrar o código com o navegador Google Chrome, para instalação desse driver use o tutorial do link https://www.selenium.dev/pt-br/documentation/webdriver/getting_started/install_drivers/, recomendo o uso do pip para instalação do driver, seção “Software de gerenciamento de Driver”, pois foi assim que instalei na minha máquina.
+Para instalar usando pip, use o comando abaixo:
+pip install webdriver-manager
+
+O último pacote que precisamos instalar é o bs4 (beautifulsoup4) para realizar o parser de elementos HTML, para instalá-lo usando pip, use o comando abaixo:
+pip install beautifulsoup4
+
+Além desses pacotes, para o uso de funções vitais para o código, realizei algumas importações, como o WebDriverWait para esperar o navegador localizar um elemento na página ou ser possível o seu click, e o sleep do pacote time para parar momentaneamente a  execução do programa reduzindo problemas com o sistema anti robô do LinkedIn. Como foi preciso obter a hora atual, o datetime precisou ser importado.
+
+-from selenium import webdriver
+-from selenium.webdriver.common.by import By
+-from selenium.webdriver.support.ui import WebDriverWait
+-from selenium.webdriver.support import expected_conditions as EC
+-from time import sleep
+-from datetime import datetime
+
+Por fim, houve pouco tempo para realizar a tarefa de forma adequada, porque é um projeto de web scrapping que costuma ser muito complexo, há muitas variáveis a se analisar quando acessamos um site, por exemplo, classes do CSS podem mudar dependendo do contexto, percebi um caso assim que foi quando a empresa não tem página no LinkedIn, além disso, se trata de um site com sistema anti robô, como o Linkedin.
+Assim, a solução funciona, mas se houvesse mais tempo, eu poderia melhorá-la, acho muito interessante e desafiador ajustar o código para pegar o máximo de informações das páginas.
+
