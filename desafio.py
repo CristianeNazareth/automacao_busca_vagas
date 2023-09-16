@@ -1,0 +1,269 @@
+from time import sleep
+import selenium
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from bs4 import BeautifulSoup
+from datetime import datetime
+import csv
+import pandas as pd
+
+
+def main():
+
+    browser_options = webdriver.ChromeOptions()
+    browser_options.add_argument("disable-infobars")
+    browser_options.add_argument("--start-maximized")
+    browser_options.add_argument("--disable-extensions")
+
+    # iniciando pagina do linkedin atraves do navegador chrome
+    browser = webdriver.Chrome(options=browser_options)
+    browser.get("https://www.linkedin.com/jobs/search?trk=guest_homepage-basic_guest_nav_menu_jobs&position=1&pageNum=0")
+    # jobs_search_bar_text_input = browser.find_element(By.ID, "job-search-bar-keywords")
+    jobs_search_bar_text_input = browser.find_element(By.XPATH, '//*[@id="job-search-bar-keywords"]')
+    # print(jobs_search_bar_text_input.get_attribute("outerHTML"))
+    wait = WebDriverWait(browser, 10)
+    jobs_search_bar_text_input_clickable = wait.until(
+        EC.element_to_be_clickable(jobs_search_bar_text_input))
+    jobs_search_bar_text_input_clickable.clear()
+    sleep(2)
+    # jobs_search_bar_text_input_clickable.send_keys('Serviço de Publicidade or Marketing e Publicidade')
+    jobs_search_bar_text_input_clickable.send_keys('Serviço De Publicidade OR Marketing E Publicidade')
+    sleep(3)
+
+    # input 2
+    jobs_search_bar_location = browser.find_element(By.XPATH, '//*[@id="job-search-bar-location"]')
+    # ver o código html do elemento
+    # print(jobs_search_bar_location.get_attribute("outerHTML"))
+    wait = WebDriverWait(browser, 10)
+    # https://www.linkedin.com/jobs/search?keywords=Servi%C3%A7o%20De%20Publicidade%20OR%20Marketing%20E%20Publicidade&location=Brasil&locationId=&geoId=106057199&f_TPR=&f_JT=F&f_E=1&position=1&pageNum=0
+    jobs_search_bar_location_clickable = wait.until(
+        EC.element_to_be_clickable(jobs_search_bar_location))
+    jobs_search_bar_location_clickable.clear()
+    wait = WebDriverWait(browser, 10)
+    jobs_search_bar_location_clickable = wait.until(
+        EC.element_to_be_clickable(jobs_search_bar_location))
+    jobs_search_bar_location_clickable.clear()
+    jobs_search_bar_location_clickable.send_keys('Brasil')
+    jobs_search_bar_location_item_brasil = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '//*[@id="job-search-bar-location-typeahead-list"]/li[1]')))
+    jobs_search_bar_location_item_brasil.click()
+    sleep(2)
+
+    # filtro tipo de vaga
+    # filtro 1
+    job_type_button = browser.find_element(By.XPATH, '//*[@id="jserp-filters"]/ul/li[4]/div/div/button')
+    job_type_button_clickable = wait.until(
+        EC.element_to_be_clickable(job_type_button))
+    job_type_button_clickable.click()
+    sleep(3)
+    job_type_full_time_element = browser.find_element(By.XPATH, '//*[@id="f_JT-0"]')
+    browser.execute_script("arguments[0].setAttribute('checked', 'checked')", job_type_full_time_element)
+    sleep(3)
+    job_type_submit_concluded = browser.find_element(By.XPATH, '//*[@id="jserp-filters"]/ul/li[4]/div/div/div/button')
+    job_type_submit_concluded_clickable = wait.until(
+        EC.element_to_be_clickable(job_type_submit_concluded))
+    job_type_submit_concluded_clickable.click()
+    sleep(3)
+
+    # filtro nivel de experiencia
+    # filtro 2
+    job_type_button_concluded = browser.find_element(By.XPATH, '//*[@id="jserp-filters"]/ul/li[5]/div/div/button')
+    job_type_button_concluded_clickable = wait.until(
+        EC.element_to_be_clickable(job_type_button_concluded))
+    job_type_button_concluded_clickable.click()
+    sleep(2)
+    job_type_internship_element = browser.find_element(By.XPATH, '//*[@id="f_E-0"]')
+    browser.execute_script("arguments[0].setAttribute('checked', 'checked')", job_type_internship_element)
+    sleep(2)
+    job_type_submit_button_concluded = browser.find_element(By.XPATH, '//*[@id="jserp-filters"]/ul/li[5]/div/div/div/button')
+    job_type_submit_button_concluded_clickable = wait.until(
+        EC.element_to_be_clickable(job_type_submit_button_concluded))
+    job_type_submit_button_concluded_clickable.click()
+    sleep(3)
+
+    # print tela
+    sleep(2)
+    browser.save_screenshot("imagem.png")
+
+    # fazer scroll ate o final varias vezes ate carregar tudo e depois pegar a lista
+    posicao_scroll = 1000
+    while len(browser.find_elements(By.CLASS_NAME, 'infinite-scroller__show-more-button--visible')) == 0:
+        browser.execute_script("window.scrollTo(0, {})".format(posicao_scroll))
+        posicao_scroll = posicao_scroll + 1000
+
+    vagas_cards = browser.find_elements(By.XPATH, '//*[@id="main-content"]/section[2]/ul/li')
+
+    info_vagas = []
+    # Iteracao de cada vaga
+    for vaga_card in vagas_cards:
+        vaga_card_bs = BeautifulSoup(vaga_card.get_attribute('innerHTML'), "html.parser")
+
+        vaga_card_clickable = wait.until(
+            EC.element_to_be_clickable(vaga_card))
+        vaga_card_clickable.click()
+        sleep(2)
+        vaga_completa = browser.find_element(By.XPATH, '/html/body/div[1]/div/section/div[2]')
+        vaga_completa_bs = BeautifulSoup(vaga_completa.get_attribute('innerHTML'), "html.parser")
+        info_vaga = gerar_info_vaga(browser, vaga_card_bs, vaga_completa_bs)
+
+        print(info_vaga)
+        info_vagas.append(info_vaga)
+        salvar_vaga_csv(info_vagas)
+
+        # break
+
+    browser.close()
+    browser.quit()
+
+
+def salvar_vaga_csv(info_vagas):
+    file_jobs = "jobs.csv"
+    field_names = (
+        'URL da vaga no linkedin', 'Nome da vaga', 'Nome da empresa contratante', 'URL da empresa contratante',
+        'Modelo de contratação', 'Tipo de contratação', 'Nível de experiência',
+        'Número de candidaturas para vaga', 'Data da postagem da vaga', 'Horário do scraping',
+        'Número de funcionários da empresa', 'Número de seguidores da empresa', 'Local sede da empresa', 'URL da candidatura'
+    )
+    with open(file_jobs, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=field_names, delimiter=";")
+        writer.writeheader()
+        for info_vaga in info_vagas:
+            writer.writerow({
+                'URL da vaga no linkedin': info_vaga['url'],
+                'Nome da vaga': info_vaga['nome'],
+                'Nome da empresa contratante': info_vaga['empresa'],
+                'URL da empresa contratante': info_vaga['url_empresa'],
+                'Modelo de contratação': info_vaga['modelo_contratacao'],
+                'Tipo de contratação': info_vaga['tipo_contratacao'],
+                'Nível de experiência': info_vaga['nivel_experiencia'],
+                'Número de candidaturas para vaga': '',
+                'Data da postagem da vaga': info_vaga['data_postagem'],
+                'Horário do scraping': info_vaga['horario_scrapping'],
+                'Número de funcionários da empresa': '',
+                'Número de seguidores da empresa': '',
+                'Local sede da empresa': '',
+                'URL da candidatura': info_vaga['url_candidatura']
+            })
+
+            print(info_vagas)
+
+def gerar_info_vaga(browser, vaga_card_bs, vaga_completa_bs):
+    horario_scrapping = datetime.now()
+    url = vaga_completa_bs.select_one('.topcard__link').get('href')
+    nome = vaga_card_bs.select_one('.base-search-card__title').getText().replace('\n', '').strip()
+    empresa = vaga_card_bs.select_one('.hidden-nested-link')
+    if (empresa is None):
+        # não tem link, muda classe
+        empresa = vaga_card_bs.select_one('.base-search-card__subtitle').getText().replace('\n', '').strip()
+        url_empresa = ''
+    else:
+        empresa = empresa.getText().replace('\n', '').strip()
+        url_empresa = vaga_card_bs.select_one('.hidden-nested-link').get('href')
+    # 2023-03-25
+    data_postagem_element = vaga_card_bs.select_one('.job-search-card__listdate')
+    if (data_postagem_element is None):
+        data_postagem_element = vaga_card_bs.select_one('.job-search-card__listdate--new')
+    data_postagem_str = data_postagem_element.get('datetime')
+    data_postagem = datetime.strptime(data_postagem_str, '%Y-%m-%d')
+    modelo_contratacao = vaga_completa_bs.find("div", class_="show-more-less-html__markup").getText().replace('\n', '').strip()
+    tipo_contratacao_time = vaga_completa_bs.find_all("span", class_="description__job-criteria-text--criteria")
+    vaga_criterios = vaga_completa_bs.find_all("span", class_="description__job-criteria-text")
+
+    nivel_experiencia = ''
+    tipo_contratacao = ''
+    if (len(vaga_criterios) >= 2):
+        nivel_experiencia = vaga_criterios[0].getText().replace('\n', '').strip()
+
+    if(len(tipo_contratacao_time) >= 2):
+        tipo_contratacao = tipo_contratacao_time[1].getText().replace('\n', '').strip()
+
+    if 'híbrido' in modelo_contratacao.lower():
+        modelo_contratacao = "híbrido"
+    if 'remoto' in modelo_contratacao.lower():
+        modelo_contratacao = "remoto"
+    else:
+        modelo_contratacao = "presencial"
+
+
+    # PEGAR DADOS DA EMPRESA NAO FUNCIONA DIREITO POR CAUSA DO SISTEMA ANTI ROBO DO LINKEDIN
+    # original_window = browser.current_window_handle
+    # browser.delete_all_cookies()
+    # browser.switch_to.new_window('tab')
+    # wait = WebDriverWait(browser, 10)
+    # sleep(2)
+    # wait.until(EC.number_of_windows_to_be(2))
+    # indice_interrogacao = url_empresa.find('?')
+    # url_empresa = url_empresa[:indice_interrogacao]
+    # browser.get(url_empresa)
+    # sleep(10)
+    # browser.close()
+    # browser.switch_to.window(original_window)
+
+    wait = WebDriverWait(browser, 10)
+    try:
+        apply_button = browser.find_element(By.XPATH, '/html/body/div[1]/div/section/div[2]/section/div/div[1]/div/div/button[1]')
+    except selenium.common.exceptions.NoSuchElementException:
+        apply_button = browser.find_element(By.XPATH, '/html/body/div[1]/div/section/div[2]/section/div/div[2]/div/div/button[1]')
+    apply_button_clickable = wait.until(
+        EC.element_to_be_clickable(apply_button))
+    apply_button_clickable.click()
+
+    login_apply_button_clickable = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '//*[@id="sign-up-modal"]/div/section/header/button')))
+    login_apply_button_clickable.click()
+
+    WebDriverWait(browser, 20).until(EC.number_of_windows_to_be(2))
+
+    main_window = browser.window_handles[0]
+    new_window = browser.window_handles[1]
+    try:
+        browser.switch_to.window(new_window)
+        sleep(2)
+        url_candidatura = browser.current_url
+        print(url_candidatura)
+    except selenium.common.exceptions.UnexpectedAlertPresentException:
+        try:
+            alert = browser.switch_to.alert
+            alert.accept()
+            url_candidatura = browser.current_url
+        except selenium.common.exceptions.UnexpectedAlertPresentException:
+            url_candidatura = url
+    except selenium.common.exceptions.WebDriverException:
+        url_candidatura = url
+    browser.close()
+    browser.switch_to.window(main_window)
+    sleep(7)
+
+    # removida a tentativa de pegar dados da pagina da empresa pq as vezes o sistema anti robo do linkedin impede o funcinamento
+
+    # link_company = browser.find_element(By.XPATH, '/html/body/div[1]/div/section/div[2]/section/div/a')
+    # link_company_clickable = wait.until(
+    #     EC.element_to_be_clickable(link_company))
+    # link_company_clickable.click()
+    # sleep(7)
+
+
+    return {
+        'url': url,
+        'nome': nome,
+        'empresa': empresa,
+        'url_empresa': url_empresa,
+        'modelo_contratacao': modelo_contratacao,  # remoto, híbrido ou presencial
+        'tipo_contratacao': tipo_contratacao,
+        'nivel_experiencia': nivel_experiencia,
+        'numero_candidaturas': 0,
+        'data_postagem': data_postagem.strftime('%d/%m/%Y'),
+        'horario_scrapping': str(horario_scrapping),
+        'numero_funcionarios_empresa': 0,
+        'numero_seguidores_empresa': 0,  # number_followers
+        'local_sede_empresa': '',  # company_thirst
+        'url_candidatura': url_candidatura
+    }
+
+    browser.close()
+    browser.quit()
+
+if __name__ == '__main__':
+    main()
